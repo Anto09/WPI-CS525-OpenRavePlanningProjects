@@ -1,0 +1,22 @@
+import Queue
+import math
+import sys
+import time
+import openravepy
+import numpy as np
+
+env = None
+robot = None
+
+steplength = 0.15
+rotationlength = 
+
+def init(e, r):
+	env = e
+	robot = r
+
+def astar(goalconfig):
+	
+def heuristic(cur_config, new_config):
+	
+	 
