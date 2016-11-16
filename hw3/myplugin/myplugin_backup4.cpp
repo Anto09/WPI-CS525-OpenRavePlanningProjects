@@ -4,7 +4,6 @@
 #define DELTA 0.05
 #define GOAL_SAMPLE 0.1
 #define GOAL_ERROR 0.05
-#define SMOOTHING_ITER 200
 
 double goal_bias;
 double step_size;
@@ -47,7 +46,7 @@ RRTNode RRTNode::NearestNode(NodeTree tree, std::vector<double>weights, bool kdt
     {
         double min_dist = DBL_MAX;
         vector<RRTNode>nodes = tree.GetNodes();
-        for (uint i = 0; i < nodes.size(); i++)
+        for (int i = 0; i < nodes.size(); i++)
         {
             RRTNode curNode = (nodes[i]);
             double dist = this->ModDistance(curNode, tree.GetRobot(), weights);
@@ -74,17 +73,13 @@ void NodeTree::DeleteNode(RRTNode node)
 {
     int index = node.GetIndex();
     this->_nodes.erase(this->_nodes.begin()+index);
-    for (uint i = index; i < this->_nodes.size(); i++)
+    for (int i = index; i < this->_nodes.size(); i++)
         this->_nodes[index].SetIndex(this->_nodes[index].GetIndex()-1);
 }
 
-/*
-Method used to set the parent of the node.
-The parent is an integer giving the position of the node's parent 
-in the tree.
-*/
 void NodeTree::AddEdge(RRTNode a, RRTNode b)
 {
+    //b.SetParent(a);
     b.SetParent(a.GetIndex());
 }
 
@@ -96,12 +91,10 @@ private:
     //RRT Fields
     OpenRAVE::RobotBasePtr _probot;
     OpenRAVE::EnvironmentBasePtr _penv;
-    OpenRAVE::CollisionCheckerBasePtr pchecker;
-    RobotBase::ManipulatorPtr _pmanip; 
+    OpenRAVE::CollisionCheckerBasePtr pchecker; 
     std::vector<double>_startConfig;
     std::vector<double>_goalConfig;
     std::vector<double>_jointWeights;
-    std::vector<OpenRAVE::GraphHandlePtr> _graphPtrVec;
     RRTNode _startNode;
     RRTNode _goalNode;
 
@@ -109,6 +102,8 @@ private:
 
 public:
     RRT(EnvironmentBasePtr penv, std::istream& ss) : ModuleBase(penv) {
+        RegisterCommand("MyCommand",boost::bind(&RRT::MyCommand,this,_1,_2),
+                        "This is an example command"),
         RegisterCommand("Set_Goal_Bias",boost::bind(&RRT::Set_Goal_Bias,this,_1,_2),
                         "Command to set goal bias"),
         RegisterCommand("Set_Bidirectional",boost::bind(&RRT::Set_Bidirectional,this,_1,_2),
@@ -120,11 +115,23 @@ public:
         this->_penv = penv;
     }
     virtual ~RRT() {}
+    
+    
+    bool MyCommand(std::ostream& sout, std::istream& sinput)
+    {
+        while (sinput.good())
+        {
+            std::string input;
+            sinput >> input;
+            sout << "output";
 
-    /*
-    Method to start the goal bias value
-    Called as a command.
-    */
+            cout << input << endl;
+        }
+        _probot = _penv->GetRobot("PR2");
+
+        return true;
+    }
+
     bool Set_Goal_Bias(std::ostream& sout, std::istream& sinput)
     {
         int count = 0;
@@ -138,10 +145,6 @@ public:
         return true;
     }
 
-    /*
-    Method to send the joint weight vector to the plugin from the Python module
-    Called as a command.
-    */
     bool Set_Joint_Weights(std::ostream& sout, std::istream& sinput)
     {
         while (sinput.good())
@@ -153,11 +156,6 @@ public:
         return true;
     }
 
-    /*
-    Method to set whether or not the planner will solve the problem using single
-    or bidirectional RRT
-    Called as a command.
-    */
     bool Set_Bidirectional(std::ostream& sout, std::istream& sinput)
     {
         int count = 0;
@@ -171,10 +169,6 @@ public:
         return true;
     }
 
-    /*
-    Method to start the RRT Procedure from the Python module
-    Called as a command.
-    */
     bool Start_RRT(std::ostream& sout, std::istream& sinput)
     {
         while (sinput.good())
@@ -187,8 +181,6 @@ public:
 
         this->_probot = _penv->GetRobot("PR2");
         this->_probot->GetActiveDOFValues(this->_startConfig);
-        _probot->SetActiveManipulator("leftarm");
-        this->_pmanip = this->_probot->GetActiveManipulator();
 
         this->_startNode.SetConfig(this->_startConfig);
         this->_goalNode.SetConfig(this->_goalConfig);
@@ -214,7 +206,6 @@ public:
         {
             cout << "No Trajectory Found" << endl;
         }
-        
         return true;
     }
 
@@ -239,16 +230,19 @@ public:
 
         _probot->GetActiveDOFLimits(l_limits, u_limits);
 
-        std::mt19937_64 ran(12 + rd());
-        for (uint c = 0; c < u_limits.size(); c++)
+        int curr = 0;
+        for (int& index : indices)
         {
-            std::uniform_real_distribution<double> distribution(l_limits[c], std::nextafter(u_limits[c], DBL_MAX));
-            double number = distribution(ran);
+            std::random_device rd;
+            std::mt19937_64 gen(rd());
+            std::uniform_real_distribution<double> distribution(l_limits[curr], std::nextafter(u_limits[curr], DBL_MAX));
+            double number = distribution(gen);
 
-            if (abs(l_limits[c]) > 2*M_PI || u_limits[c] > 2*M_PI)
+            if (abs(l_limits[curr]) > 2*M_PI || u_limits[curr] > 2*M_PI)
                 number = atan2(sin(number), cos(number));
 
-            ret.SetConfigElement(c, number);
+            ret.SetConfigElement(curr, number);
+            curr++;
         }
         return ret; 
     }
@@ -259,30 +253,21 @@ public:
         return GetEnv()->CheckCollision(_probot) || _probot->CheckSelfCollision();
     }
 
-    bool CompareConfig(RRTNode a, const RRTNode& b, std::vector<double> weights)
+    bool CompareConfig(RRTNode a, const RRTNode& b)
     {
-        if (weights.size() > 0)
-            return a.ModDistance(b, _probot, weights) < GOAL_ERROR;
         return a.Distance(b, _probot) < GOAL_ERROR;
     }
 
     void Swap(NodeTree* a, NodeTree* b)
     {
-        NodeTree* temp  = a;
-        a               = b;
-        b               = temp;
+        NodeTree* temp = a;
+        a = b;
+        b = temp;
     }
 
     std::vector<RRTNode> Path(NodeTree a, RRTNode q)
     {
-        /*
-        ofstream myfile;
-        myfile.open ("final_output_3.txt.txt",  ios::out | ios::app);
-        myfile << "Number of nodes sampled " << a.GetNodes().size() << "\n";
-        myfile.close();
-        */
         std::vector<RRTNode> path;
-
         path.push_back(q);
 
         while (q.GetParent() > -1)
@@ -292,73 +277,6 @@ public:
         }
         path.push_back(_startNode);
         std::reverse(path.begin(), path.end());
-
-        float orig_path_length = 0.0;
-        std::vector<float> prev_pos;
-        for (uint i = 0; i < path.size(); i++)
-        {
-            RRTNode node = path[i];
-            _probot->SetActiveDOFValues(node.GetConfig());
-            RaveVector<double> trans = _pmanip->GetEndEffectorTransform().trans;
-
-            std::vector<float> pos;
-            pos.push_back(trans.x);
-            pos.push_back(trans.y);
-            pos.push_back(trans.z);
-
-            std::vector<float> color;
-            color.push_back(1);
-            color.push_back(0);
-            color.push_back(0);
-            color.push_back(1);
-
-            _graphPtrVec.push_back(GetEnv()->plot3(&pos[0],1,sizeof(pos),6.0,&color[0],0));
-
-            if (i > 0)
-                orig_path_length += sqrt((pos[0]-prev_pos[0]) * (pos[0]-prev_pos[0]) +
-                                         (pos[1]-prev_pos[1]) * (pos[1]-prev_pos[1]) +
-                                         (pos[2]-prev_pos[2]) * (pos[2]-prev_pos[2]));
-            prev_pos = pos;
-        }
-
-        path = ShortcutSmoothing(path);
-        _probot->SetActiveDOFValues(_startConfig);
-
-        float new_path_length = 0.0;
-        for (uint i = 0; i < path.size(); i++)
-        {
-            RRTNode node = path[i];
-            _probot->SetActiveDOFValues(node.GetConfig());
-            RaveVector<double> trans = _pmanip->GetEndEffectorTransform().trans;
-
-            std::vector<float> pos;
-            pos.push_back(trans.x);
-            pos.push_back(trans.y);
-            pos.push_back(trans.z);
-
-            std::vector<float> color;
-            color.push_back(0);
-            color.push_back(0);
-            color.push_back(1);
-            color.push_back(1);
-
-            _graphPtrVec.push_back(GetEnv()->plot3(&pos[0],1,sizeof(pos),6.0,&color[0],0));
-
-            if (i > 0)
-                new_path_length += sqrt((pos[0]-prev_pos[0]) * (pos[0]-prev_pos[0]) +
-                                         (pos[1]-prev_pos[1]) * (pos[1]-prev_pos[1]) +
-                                         (pos[2]-prev_pos[2]) * (pos[2]-prev_pos[2]));
-            prev_pos = pos;
-        }
-
-        /*
-        myfile.open ("final_output_3.txt.txt", ios::out | ios::app);
-        myfile << "original path length " << orig_path_length << endl;
-        myfile << "smoothed path length " << new_path_length << endl;
-        myfile.close();
-        */
-
-        _probot->SetActiveDOFValues(_startConfig);
         return path;
     }
 
@@ -368,18 +286,63 @@ public:
         return returnTree;
     }
 
+    std::vector<RRTNode> ShortcutSmooting(std::vector<RRTNode> path, NodeTree tree)
+    {
+        int max_iterations = path.size() * 2;
+        std::vector<RRTNode> new_path;
+
+        for (int m = 0; m < max_iterations; m++)
+        {
+            int rand_one = rand() % path.size();
+            int rand_two = rand() % path.size();
+            int rand_min = min(rand_one, rand_two);
+            int rand_max = max(rand_one, rand_two);
+
+            RRTNode start_conf = path[rand_min];
+            RRTNode end_conf = path[rand_max];
+
+            RRTNode qprev = start_conf;
+            double distance = start_conf.Distance(end_conf, _probot);
+            int max_steps = ceil(distance/DELTA);
+            std::vector<double> diff = end_conf.GetConfig();
+            std::vector<double> init = start_conf.GetConfig();
+            _probot->SubtractActiveDOFValues(diff, start_conf.GetConfig());
+
+            for (int i = 0; i < max_steps; i++)
+            {
+                for (int i = 0; i < init.size(); i++)
+                {
+                    double elem = diff[i];
+                    if (DELTA < distance)
+                        init[i] += (elem/distance) * DELTA;
+                    else
+                        init[i] += elem;
+                }
+
+                RRTNode qnew(qprev.GetIndex(), init);
+                if (!CheckCollision(qnew))
+                    break;
+            }
+
+            if (CompareConfig(end_conf, qprev))
+            {
+
+            }
+
+        }
+        return new_path;
+    }
+
     RRTNode NewConfig(RRTNode& q, RRTNode& qnear, NodeTree& tree)
     {
-        //double distance           = qnear.Distance(q, _probot);
-        double distance             = qnear.ModDistance(q, _probot, _jointWeights);
-        std::vector<double> diff    = q.GetConfig();
-
+        double distance = qnear.Distance(q, tree.GetRobot());
+        std::vector<double> diff = q.GetConfig();
         _probot->SubtractActiveDOFValues(diff, qnear.GetConfig()); //C-space vector from qnear = q
 
         vector<double> init = qnear.GetConfig();
 
         double sum = 0.0;
-        for (uint i = 0; i < init.size(); i++)
+        for (int i = 0; i < init.size(); i++)
         {  //new configuration is qnear config + stepsize of DELTA in respective directions
             double elem = diff[i];
             if (DELTA < distance)
@@ -395,10 +358,10 @@ public:
 
     int Extend(NodeTree& tree, RRTNode& q) //2 = reached, 1 = advanced, 0 = trapped
     {
-        RRTNode qnear           = q.NearestNode(tree, _jointWeights);
-        RRTNode qnew            = NewConfig(q, qnear, tree);
+        RRTNode qnear = q.NearestNode(tree, _jointWeights);
         std::vector<double>diff = q.GetConfig();
         _probot->SubtractActiveDOFValues(diff, qnear.GetConfig());
+        RRTNode qnew = NewConfig(q, qnear, tree);
 
         if (!CheckCollision(qnew))
         {
@@ -406,7 +369,7 @@ public:
             tree.AddNode(qnew);
             tree.AddEdge(qnear, qnew);
 
-            if (CompareConfig(q, qnew, _jointWeights))
+            if (CompareConfig(q, qnew))
                 return 2;
             else
                 return 1;
@@ -431,24 +394,27 @@ public:
     int Connect(NodeTree& tree, RRTNode& q)
     {
         RRTNode qnear = q.NearestNode(tree, _jointWeights);
-        double dist = qnear.ModDistance(q, _probot, _jointWeights);
+        double dist = qnear.Distance(q, _probot);
         int max_steps = ceil(dist/DELTA);
 
         RRTNode qprev = qnear;
+        double distance = qprev.Distance(q, tree.GetRobot());
+        std::vector<double> diff = q.GetConfig();
+        _probot->SubtractActiveDOFValues(diff, qprev.GetConfig());
+
         for (int i = 0; i < max_steps; i++)
         {
-            double distance             = qprev.ModDistance(q, _probot, _jointWeights);
-            std::vector<double> diff    = q.GetConfig();
-            std::vector<double> init    = qprev.GetConfig();
+            vector<double> init = qprev.GetConfig();
 
-            _probot->SubtractActiveDOFValues(diff, qprev.GetConfig());
-            for (uint i = 0; i < init.size(); i++)
+            for (int i = 0; i < init.size(); i++)
             {
                 double elem = diff[i];
                 if (DELTA < distance)
                     init[i] += (elem/distance) * DELTA;
                 else
                     init[i] += elem;
+
+                diff[i] -= init[i];
             }
 
             RRTNode qnew(qprev.GetIndex(), init);
@@ -460,10 +426,11 @@ public:
             tree.AddEdge(qprev, qnew);
 
             qprev = qnew;
+            distance = distance - DELTA;
         }
 
         RRTNode qfinal = tree.GetNodes()[tree.GetNodes().size()-1];
-        if (CompareConfig(q, qfinal, _jointWeights))
+        if (CompareConfig(q, qfinal))
             return 2;
         else
         {
@@ -491,7 +458,7 @@ public:
                     RRTNode qnew = tree_a.GetNodes()[tree_a.GetNodes().size()-1];
                     if(Bidirect_Connect(tree_b, qnew) == 2)
                     {
-                        if (CompareConfig(qrand, this->_goalNode, _jointWeights))
+                        if (CompareConfig(qrand, this->_goalNode))
                             return Path(tree_a, qnew);
                     }
                 }
@@ -514,164 +481,39 @@ public:
                 if(Connect(tree, qrand) == 2)
                 {
                     RRTNode last = tree.GetNodes()[tree.GetNodes().size()-1];
-                    if (CompareConfig(qrand, _goalNode, _jointWeights))
+                    if (CompareConfig(qrand, _goalNode))
                     {
-                        /*
-                        ofstream myfile;
-                        myfile.open ("final_output_3.txt.txt",  ios::out | ios::app);
-                        myfile << "Found Path in " << difftime(cur,start) << " seconds w/ goal bias " << goal_bias << "\n";
-                        myfile.close();
-                        */
-
+                        cout << "Found Path in " << difftime(cur,start) << " seconds w/ goal bias " << goal_bias << endl;
                         return Path(tree, last);                    
-                    }   
+                    }
                 }
                 time(&cur);
             }
             std::vector<RRTNode> p;
+            return p;
 
             /*
-            ofstream myfile;
-            myfile.open ("final_output_3.txt.txt",  ios::out | ios::app);
-            myfile << "No path found\n";
-            myfile << "Number of nodes sampled " << tree.GetNodes().size() << "\n";
-            myfile.close();
+            double min_dist = DBL_MAX;
+            RRTNode min_node;
+
+            for (RRTNode& node : tree.GetNodes())
+            {
+                double dist = node.Distance(_goalNode, _probot);
+                if (dist < min_dist)
+                {
+                    min_dist = dist;
+                    min_node = node;
+                }
+            }
+            cout << "MIN_DIST " << min_dist << endl;
+
+            cout << "CLOSEST NODE ";
+            for (double& joint : min_node.GetConfig())
+                cout << joint << " ";
+            cout << endl;
+            return Path(tree, min_node);
             */
-
-            return p;
         }
-    }
-
-    std::vector<RRTNode> ShortcutSmoothing(std::vector<RRTNode> path)
-    {
-        std::vector<double> u_limits;
-        std::vector<double> l_limits;
-
-        _probot->GetActiveDOFLimits(l_limits, u_limits);
-
-        const long double startTime = time(0);
-        const long double startimeMS = startTime*1000;
-
-        for (int m = 0; m < SMOOTHING_ITER; m++)
-        {
-            std::random_device rd;
-            std::mt19937_64 gen(rd());
-
-            std::uniform_real_distribution<double> rand_one(0, path.size());
-            int rand_min = rand_one(gen);
-
-            std::uniform_real_distribution<double> rand_two(rand_min+1, path.size());
-            int rand_max = rand_two(gen);
-
-            RRTNode start_conf = path[rand_min];
-            RRTNode end_conf = path[rand_max];
-
-            if (rand_min >= path.size() || rand_min == rand_max)
-                continue;
-
-            RRTNode qprev    = start_conf;
-            double distance  = start_conf.Distance(end_conf, _probot);
-            int max_steps    = ceil(distance/DELTA);
-
-            for (int i = 0; i < max_steps; i++)
-            {
-                std::vector<double> diff = end_conf.GetConfig();
-                std::vector<double> init = qprev.GetConfig();
-                double dist              = qprev.Distance(end_conf, _probot);
-
-                _probot->SubtractActiveDOFValues(diff, qprev.GetConfig());
-                for (uint i = 0; i < init.size(); i++)
-                {
-                    double elem = diff[i];
-                    if (DELTA < dist)
-                        init[i] += (elem/dist) * DELTA;
-                    else
-                        init[i] += elem;
-                }
-
-                qprev.SetConfig(init);
-                if (CheckCollision(qprev))
-                    break;
-            }
-            if (CompareConfig(end_conf, qprev, _jointWeights))
-            {
-                std::vector<RRTNode> temp;
-                for (int i = 0; i < rand_min; i++)
-                {
-                    temp.push_back(path[i]);
-                }
-                temp.push_back(start_conf);
-                temp.push_back(end_conf);
-                for (uint i = rand_max+1; i < path.size(); i++)
-                {
-                    temp.push_back(path[i]);
-                }
-                path = temp;
-            }
-
-            float new_path_length = 0.0;
-            std::vector<float> prev_pos;
-            for (uint i = 0; i < path.size(); i++)
-            {
-                RRTNode node = path[i];
-                _probot->SetActiveDOFValues(node.GetConfig());
-                RaveVector<double> trans = _pmanip->GetEndEffectorTransform().trans;
-                std::vector<float> pos;
-                pos.push_back(trans.x);
-                pos.push_back(trans.y);
-                pos.push_back(trans.z);
-
-
-                if (i > 0)
-                    new_path_length += sqrt((pos[0]-prev_pos[0]) * (pos[0]-prev_pos[0]) +
-                                             (pos[1]-prev_pos[1]) * (pos[1]-prev_pos[1]) +
-                                             (pos[2]-prev_pos[2]) * (pos[2]-prev_pos[2]));
-
-                prev_pos = pos;
-            }
-        }
-        //Add intermediate nodes in smoothed nodes for a better plotted path;
-        std::vector<RRTNode> final;
-        for (uint i = 0; i < path.size()-1; i++)
-        {
-            RRTNode start_conf = path[i];
-            RRTNode end_conf = path[i+1];
-
-            RRTNode qprev    = start_conf;
-            double distance  = start_conf.Distance(end_conf, _probot);
-            int max_steps    = ceil(distance/DELTA);
-
-            for (int i = 0; i < max_steps; i++)
-            {
-                std::vector<double> diff = end_conf.GetConfig();
-                std::vector<double> init = qprev.GetConfig();
-                double dist              = qprev.Distance(end_conf, _probot);
-
-                _probot->SubtractActiveDOFValues(diff, qprev.GetConfig());
-                for (uint i = 0; i < init.size(); i++)
-                {
-                    double elem = diff[i];
-                    if (DELTA < dist)
-                        init[i] += (elem/dist) * DELTA;
-                    else
-                        init[i] += elem;
-                }
-                qprev.SetConfig(init);
-                RRTNode inter(qprev.GetParent(), init);
-                final.push_back(inter);
-            }
-        }
-        const long double curTime = time(0);
-        const long double curTimeMS = curTime*1000;
-
-        /*
-        ofstream myfile;
-        myfile.open ("final_output_3.txt.txt", ios::out | ios::app);
-        myfile << "smoothing computation time " << (curTimeMS - startimeMS) << endl;
-        myfile.close();
-        */
-
-        return final;
     }
 };
 

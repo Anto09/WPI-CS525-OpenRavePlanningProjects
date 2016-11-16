@@ -47,10 +47,10 @@ RM = /usr/bin/cmake -E remove -f
 CMAKE_EDIT_COMMAND = /usr/bin/ccmake
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/home/anto/Desktop/CS 525/hw3/myplugin"
+CMAKE_SOURCE_DIR = "/home/anto/Desktop/CS 525/Header_test/hw3/myplugin"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/home/anto/Desktop/CS 525/hw3/myplugin/build"
+CMAKE_BINARY_DIR = "/home/anto/Desktop/CS 525/Header_test/hw3/myplugin/build"
 
 #=============================================================================
 # Target rules for target CMakeFiles/myplugin.dir
@@ -59,7 +59,7 @@ CMAKE_BINARY_DIR = "/home/anto/Desktop/CS 525/hw3/myplugin/build"
 CMakeFiles/myplugin.dir/all:
 	$(MAKE) -f CMakeFiles/myplugin.dir/build.make CMakeFiles/myplugin.dir/depend
 	$(MAKE) -f CMakeFiles/myplugin.dir/build.make CMakeFiles/myplugin.dir/build
-	$(CMAKE_COMMAND) -E cmake_progress_report "/home/anto/Desktop/CS 525/hw3/myplugin/build/CMakeFiles"  1
+	$(CMAKE_COMMAND) -E cmake_progress_report "/home/anto/Desktop/CS 525/Header_test/hw3/myplugin/build/CMakeFiles"  1
 	@echo "Built target myplugin"
 .PHONY : CMakeFiles/myplugin.dir/all
 
@@ -69,9 +69,9 @@ all: CMakeFiles/myplugin.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/myplugin.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start "/home/anto/Desktop/CS 525/hw3/myplugin/build/CMakeFiles" 1
+	$(CMAKE_COMMAND) -E cmake_progress_start "/home/anto/Desktop/CS 525/Header_test/hw3/myplugin/build/CMakeFiles" 1
 	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/myplugin.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start "/home/anto/Desktop/CS 525/hw3/myplugin/build/CMakeFiles" 0
+	$(CMAKE_COMMAND) -E cmake_progress_start "/home/anto/Desktop/CS 525/Header_test/hw3/myplugin/build/CMakeFiles" 0
 .PHONY : CMakeFiles/myplugin.dir/rule
 
 # Convenience name for target.

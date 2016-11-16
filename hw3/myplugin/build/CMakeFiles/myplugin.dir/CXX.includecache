@@ -6,7 +6,9 @@
 
 #IncludeRegexTransform: 
 
-/home/anto/Desktop/CS 525/hw3/myplugin/RRT.h
+/home/anto/Desktop/CS 525/Header_test/hw3/myplugin/RRT.hpp
+cfloat
+-
 vector
 -
 algorithm
@@ -15,12 +17,28 @@ cmath
 -
 openrave/plugin.h
 -
+openrave/planningutils.h
+-
 boost/bind.hpp
 -
+random
+-
+string
+-
+iostream
+-
+fstream
+-
+chrono
+-
+time.h
+-
+ctime
+-
 
-/home/anto/Desktop/CS 525/hw3/myplugin/myplugin.cpp
-RRT.h
-/home/anto/Desktop/CS 525/hw3/myplugin/RRT.h
+/home/anto/Desktop/CS 525/Header_test/hw3/myplugin/myplugin.cpp
+RRT.hpp
+/home/anto/Desktop/CS 525/Header_test/hw3/myplugin/RRT.hpp
 
 /usr/include/openrave-0.8/openrave/collisionchecker.h
 
@@ -163,6 +181,10 @@ openrave/environment.h
 /usr/include/openrave-0.8/openrave/physicsengine.h
 
 /usr/include/openrave-0.8/openrave/planner.h
+
+/usr/include/openrave-0.8/openrave/planningutils.h
+openrave/openrave.h
+-
 
 /usr/include/openrave-0.8/openrave/plugin.h
 openrave/openrave.h

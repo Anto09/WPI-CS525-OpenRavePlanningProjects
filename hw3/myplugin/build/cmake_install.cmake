@@ -1,4 +1,4 @@
-# Install script for directory: /home/anto/Desktop/CS 525/hw3/myplugin
+# Install script for directory: /home/anto/Desktop/CS 525/Header_test/hw3/myplugin
 
 # Set the install prefix
 IF(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -39,7 +39,7 @@ IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspeci
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./libmyplugin.so"
          RPATH "")
   ENDIF()
-  FILE(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/." TYPE SHARED_LIBRARY FILES "/home/anto/Desktop/CS 525/hw3/myplugin/build/libmyplugin.so")
+  FILE(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/." TYPE SHARED_LIBRARY FILES "/home/anto/Desktop/CS 525/Header_test/hw3/myplugin/build/libmyplugin.so")
   IF(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./libmyplugin.so" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./libmyplugin.so")
     IF(CMAKE_INSTALL_DO_STRIP)
@@ -54,7 +54,7 @@ ELSE(CMAKE_INSTALL_COMPONENT)
   SET(CMAKE_INSTALL_MANIFEST "install_manifest.txt")
 ENDIF(CMAKE_INSTALL_COMPONENT)
 
-FILE(WRITE "/home/anto/Desktop/CS 525/hw3/myplugin/build/${CMAKE_INSTALL_MANIFEST}" "")
+FILE(WRITE "/home/anto/Desktop/CS 525/Header_test/hw3/myplugin/build/${CMAKE_INSTALL_MANIFEST}" "")
 FOREACH(file ${CMAKE_INSTALL_MANIFEST_FILES})
-  FILE(APPEND "/home/anto/Desktop/CS 525/hw3/myplugin/build/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
+  FILE(APPEND "/home/anto/Desktop/CS 525/Header_test/hw3/myplugin/build/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
 ENDFOREACH(file)

@@ -4,7 +4,7 @@ SET(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 SET(CMAKE_DEPENDS_CHECK_CXX
-  "/home/anto/Desktop/CS 525/hw3/myplugin/myplugin.cpp" "/home/anto/Desktop/CS 525/hw3/myplugin/build/CMakeFiles/myplugin.dir/myplugin.cpp.o"
+  "/home/anto/Desktop/CS 525/Header_test/hw3/myplugin/myplugin.cpp" "/home/anto/Desktop/CS 525/Header_test/hw3/myplugin/build/CMakeFiles/myplugin.dir/myplugin.cpp.o"
   )
 SET(CMAKE_CXX_COMPILER_ID "GNU")
 
